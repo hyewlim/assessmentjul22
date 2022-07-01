@@ -5,93 +5,85 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class MailMerge 
 {
     public static void main(String[] args) {
-    
-    
-        String csv = "";
-        String txt = "";
-
         
+        String csv = "";
+        String txt = "";  
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].endsWith(".csv")) {
-                csv = args[i];
-                System.out.println("CSV file " + csv + " loaded");
+                csv = "data\\" + args[i];
+                System.out.println("Finding csv file " + csv + " ...");
             }
         }
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].endsWith(".txt")){
-                txt = args[i];
-                System.out.println("Template file " + txt + " loaded");
+                txt = "data\\" + args[i];
+                System.out.println("Finding template file " + txt + " ...");
             }
         }
 
-        Path readme = Paths.get("src\\main\\java\\vttp\\", csv);
-        // String csvDataFile = "data\\thankyou.csv";
-        File formatFile = new File("data", txt);
+       
+       String delimiter = ",";
+       String line;
+       //read csv
+       List<List<String>> list = new ArrayList();
+        try (BufferedReader br =
+                     new BufferedReader(new FileReader(csv))) {
+            while((line = br.readLine()) != null){
+                List<String> values = Arrays.asList(line.split(delimiter));
+                list.add(values);
+            }
 
-
-        List<Contacts> contacts = readContactsfromCSV(readme);
-        for (Contacts contacts2 : contacts) {
-            System.out.println(contacts2);
+        } catch (FileNotFoundException e){
+            System.err.println("File not found: " + e.getMessage());
         }
-
-        // try (BufferedReader br = new BufferedReader(new FileReader("test.txt"))) {
-        //     try (BufferedWriter bw = new BufferedWriter(new FileWriter("Copied.txt"))) {
-        //         String text = null;
-        //         while ((text = br.readLine()) != null) {
-        //             System.out.println(text);
-        //             bw.write(text);
-        //             bw.newLine();
-        //         }
-        //     }
-        // } catch (FileNotFoundException e) {
-        //     System.out.println("Error: " + e.getMessage());
-        // } catch (IOException e) {
-        //     System.out.println("Error: " + e.getMessage());
-        // }
+        //csv header
+        List<String> header = list.get(0);
+        System.out.println( header.get(0));
 
 
-    }
 
-    private static List<Contacts> readContactsfromCSV(Path path) {
-        List<Contacts> contacts = new ArrayList<>();
-
-        try (BufferedReader br = Files.newBufferedReader(path)) {
-
-            String line = br.readLine();
-
-            while (line != null) {
-                String[] attributes = line.split(",");
- 
-                Contacts contact = createContact(attributes);
-
-     
-                contacts.add(contact);
-
- 
-                line = br.readLine();
-
-
+       //read txt
+       String newLine;
+       String totalStr = "";
+       
+        try (BufferedReader brs = new BufferedReader(new FileReader(txt))) {
+            while((newLine = brs.readLine()) != null){
+                for (int i = 0; i < header.size(); i++) {
+                    if (newLine.contains(header.get(i))) {
+                        for (int j = 1; j < list.size(); j++) {
+                            newLine = newLine.replaceAll(header.get(i), list.get(j));
+                        }
+                    }
                 }
+            }
 
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
+            totalStr = totalStr.replace("first_name", "replacement");
+            FileWriter fw = new FileWriter(new File(txt));
+            fw.write(totalStr);
+            fw.close();
+
+        } catch (FileNotFoundException e){
+            System.err.println("File not found: " + e.getMessage());
         }
-
-        return contacts;
     }
+        
 
     private static Contacts createContact(String[] data) {
         String first_name = data[0];
@@ -102,5 +94,10 @@ public class MailMerge
         return new Contacts(first_name, last_name, address, years);
     }
 
+    }
 
-}
+
+
+
+
+
